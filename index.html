@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система голосования</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+        .voting {
+            width: 100%;
+            max-width: 460px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+        #output {
+            width: 100%;
+            min-height: 160px;
+            font-size: 15px;
+            line-height: 1.5;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            resize: vertical;
+        }
+        .field {
+            margin-bottom: 20px;
+        }
+        .field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        input {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+        }
+        button {
+            padding: 12px 20px;
+            font-size: 16px;
+            color: white;
+            background: #0d6efd;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 100px;
+        }
+        button:hover { background: #0b5ed7; }
+        button.clear { background: #6c757d; }
+        button.clear:hover { background: #5c636a; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="voting">
+    <textarea id="output" readonly placeholder="Здесь будут сообщения и результаты..."></textarea>
+
+    <div class="field">
+        <label>Создать опрос (варианты по умолчанию: Да / Нет)</label>
+        <div class="row">
+            <input type="text" id="pollTitle" placeholder="Заголовок опроса">
+            <button onclick="createPoll()">Создать</button>
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Добавить пользователя</label>
+        <div class="row">
+            <input type="text" id="userId" placeholder="ID (user1, user2...)">
+            <input type="text" id="userName" placeholder="Имя">
+            <button onclick="addUser()">Добавить</button>
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Голосовать</label>
+        <div class="row">
+            <input type="number" id="pollIdVote" placeholder="ID опроса" min="1">
+            <input type="number" id="optionIndex" placeholder="Вариант (0 или 1)" min="0" max="1">
+            <input type="text" id="userIdVote" placeholder="Твой ID">
+            <button onclick="vote()">Голосовать</button>
+        </div>
+    </div>
+
+    <div class="field">
+        <label>Действия с опросом</label>
+        <div class="row">
+            <input type="number" id="pollIdAction" placeholder="ID опроса">
+            <button onclick="getResults()">Результаты</button>
+            <button class="danger" onclick="deletePoll()">Удалить</button>
+        </div>
+    </div>
+
+    <div class="row">
+        <button class="clear" onclick="clearStorage()">Очистить все данные</button>
+    </div>
+
+    <div class="footer">
+        Bogdan Matrosov © 2026
+    </div>
+</div>
+
+<script src="voting.js"></script>
+<script>
+    const system = new VotingSystem();
+
+    function log(message) {
+        const output = document.getElementById('output');
+        output.value += message + '\n';
+        output.scrollTop = output.scrollHeight;
+    }
+
+    function createPoll() {
+        try {
+            const title = document.getElementById('pollTitle').value.trim();
+            if (!title) throw new Error('Введите заголовок');
+            const id = system.createPoll(title, ['Да', 'Нет']);
+            log(`Опрос "${title}" создан. ID: ${id}`);
+            document.getElementById('pollTitle').value = '';
+        } catch (e) {
+            log('Ошибка: ' + e.message);
+        }
+    }
+
+    function addUser() {
+        try {
+            const id = document.getElementById('userId').value.trim();
+            const name = document.getElementById('userName').value.trim();
+            if (!id || !name) throw new Error('Заполните ID и имя');
+            system.addUser(id, name);
+            log(`Пользователь "${name}" (ID: ${id}) добавлен`);
+            document.getElementById('userId').value = '';
+            document.getElementById('userName').value = '';
+        } catch (e) {
+            log('Ошибка: ' + e.message);
+        }
+    }
+
+    function vote() {
+        try {
+            const pollId = Number(document.getElementById('pollIdVote').value);
+            const userId = document.getElementById('userIdVote').value.trim() || 'user1';
+            const optionIndex = Number(document.getElementById('optionIndex').value);
+            system.vote(pollId, userId, optionIndex);
+            log(`Голос от ${userId} за вариант ${optionIndex} в опросе ${pollId}`);
+        } catch (e) {
+            log('Ошибка: ' + e.message);
+        }
+    }
+
+    function getResults() {
+        try {
+            const pollId = Number(document.getElementById('pollIdAction').value);
+            const res = system.getPollResults(pollId);
+            if (!res) throw new Error('Опрос не найден');
+            log(`Результаты опроса "${res.title}":`);
+            res.results.forEach(r => log(`  ${r.text}: ${r.votes}`));
+            log(`Всего голосов: ${res.totalVotes}`);
+        } catch (e) {
+            log('Ошибка: ' + e.message);
+        }
+    }
+
+    function deletePoll() {
+        try {
+            const pollId = Number(document.getElementById('pollIdAction').value);
+            system.deletePoll(pollId);
+            log(`Опрос ${pollId} удалён`);
+        } catch (e) {
+            log('Ошибка: ' + e.message);
+        }
+    }
+
+    function clearStorage() {
+        if (confirm('Очистить ВСЕ данные? Это нельзя отменить!')) {
+            system.clearAll();
+            document.getElementById('output').value = 'Все данные очищены\n';
+        }
+    }
+</script>
+
+</body>
+</html>
