@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+        h1 { text-align: center; margin-bottom: 24px; color: #333; }
+        .add-task {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            min-width: 200px;
+        }
+        button {
+            padding: 12px 20px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0b5ed7; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .task-list {
+            list-style: none;
+        }
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: #fafafa;
+        }
+        .task-item.completed { opacity: 0.6; text-decoration: line-through; }
+        .task-item input[type="checkbox"] { margin-right: 8px; }
+        .task-info { flex: 1; }
+        .task-title { font-weight: bold; margin-bottom: 4px; }
+        .task-desc { color: #666; font-size: 14px; }
+        .task-actions { display: flex; gap: 8px; }
+        .task-actions button { padding: 6px 12px; font-size: 14px; }
+        .stats {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+        }
+        .footer { text-align: center; margin-top: 20px; font-size: 13px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>To-Do List</h1>
+        <div class="add-task">
+            <input type="text" id="taskTitle" placeholder="Новая задача">
+            <input type="text" id="taskDesc" placeholder="Описание (опционально)">
+            <button onclick="addTask()">Добавить</button>
+        </div>
+        <ul class="task-list" id="taskList"></ul>
+        <div class="stats" id="stats">Всего задач: 0 | Выполнено: 0</div>
+        <button class="danger" onclick="clearAll()" style="display: block; margin: 20px auto;">Очистить всё</button>
+        <div class="footer">Bogdan Matrosov © 2026</div>
+    </div>
+
+    <script src="todo.js"></script>
+    <script>
+        const todo = new TodoList();
+
+        function addTask() {
+            try {
+                const title = document.getElementById('taskTitle').value.trim();
+                const desc = document.getElementById('taskDesc').value.trim();
+                if (!title) throw new Error('Введите название');
+                todo.addTask(title, desc);
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskDesc').value = '';
+                renderTasks();
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        function toggleCompleted(id) {
+            todo.toggleCompleted(id);
+            renderTasks();
+        }
+
+        function editTask(id) {
+            const title = prompt('Новое название:');
+            const desc = prompt('Новое описание:');
+            if (title !== null) todo.updateTask(id, title || undefined, desc || undefined);
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            if (confirm('Удалить задачу?')) {
+                todo.deleteTask(id);
+                renderTasks();
+            }
+        }
+
+        function renderTasks() {
+            const list = document.getElementById('taskList');
+            list.innerHTML = '';
+            todo.getAllTasks().forEach(task => {
+                const li = document.createElement('li');
+                li.className = `task-item ${task.completed ? 'completed' : ''}`;
+                li.innerHTML = `
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleCompleted(${task.id})">
+                    <div class="task-info">
+                        <div class="task-title">${task.title}</div>
+                        <div class="task-desc">${task.description || ''}</div>
+                    </div>
+                    <div class="task-actions">
+                        <button onclick="editTask(${task.id})">Редактировать</button>
+                        <button class="danger" onclick="deleteTask(${task.id})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+            updateStats();
+        }
+
+        function updateStats() {
+            const all = todo.getAllTasks().length;
+            const completed = todo.getCompletedTasks().length;
+            document.getElementById('stats').textContent = `Всего задач: ${all} | Выполнено: ${completed}`;
+        }
+
+        function clearAll() {
+            if (confirm('Очистить все задачи?')) {
+                todo.clearAll();
+                renderTasks();
+            }
+        }
+
+        // Загружаем при старте
+        renderTasks();
+    </script>
+</body>
+</html>
