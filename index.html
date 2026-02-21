@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Библиотека — Управление книгами</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff7e5f;
+            --primary-dark: #feb47b;
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --bg: #f8f9fa;
+            --card: #ffffff;
+            --text: #2c3e50;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            color: var(--text);
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.8rem;
+            margin-bottom: 2rem;
+            color: var(--text);
+            letter-spacing: 1px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin: 2.5rem 0 1rem;
+            color: var(--text);
+            border-bottom: 2px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 220px;
+            padding: 14px 16px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255,126,95,0.15);
+            outline: none;
+        }
+
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255,126,95,0.3);
+        }
+
+        button.danger {
+            background: linear-gradient(90deg, var(--danger), #e74c3c);
+        }
+
+        .section {
+            margin-top: 2rem;
+        }
+
+        .item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            background: #fdfdfd;
+            border: 1px solid #eee;
+            transition: all 0.25s;
+        }
+
+        .item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+        }
+
+        .item.available { border-left: 5px solid var(--success); }
+        .item.borrowed   { border-left: 5px solid var(--warning); }
+
+        .item i {
+            font-size: 1.8rem;
+            opacity: 0.9;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .item-desc {
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .item-actions button {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .borrow-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .borrow-buttons button {
+            background: #6c5ce7;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+        }
+
+        .borrow-buttons button:hover {
+            background: #5a4bc7;
+        }
+
+        .stats {
+            margin-top: 2.5rem;
+            padding: 20px;
+            background: rgba(255,126,95,0.05);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: #777;
+            font-size: 0.9rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .item {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-book-open"></i> Библиотека</h1>
+
+        <div class="section">
+            <h2>Добавить книгу</h2>
+            <div class="form-row">
+                <input type="text" id="bookTitle" placeholder="Название книги" required>
+                <input type="text" id="bookAuthor" placeholder="Автор (опционально)">
+                <button onclick="addBook()">Добавить книгу</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Добавить читателя</h2>
+            <div class="form-row">
+                <input type="text" id="readerName" placeholder="Имя читателя" required>
+                <button onclick="addReader()">Добавить читателя</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Книги в библиотеке</h2>
+            <ul class="list" id="bookList"></ul>
+        </div>
+
+        <div class="section">
+            <h2>Читатели</h2>
+            <ul class="list" id="readerList"></ul>
+        </div>
+
+        <div class="stats" id="stats">
+            Всего книг: 0 | Доступно: 0 | Взяты: 0
+        </div>
+
+        <button class="danger" onclick="clearAll()" style="margin: 2rem auto; display: block;">
+            Очистить всю библиотеку
+        </button>
+
+        <div class="footer">© Bogdan Matrosov 2026</div>
+    </div>
+
+    <script src="library.js"></script>
+    <script>
+        const lib = new LibrarySystem();
+
+        function addBook() {
+            const title = document.getElementById('bookTitle').value.trim();
+            const author = document.getElementById('bookAuthor').value.trim();
+            if (!title) return alert('Введите название книги!');
+            lib.addBook(title, author);
+            document.getElementById('bookTitle').value = '';
+            document.getElementById('bookAuthor').value = '';
+            renderAll();
+        }
+
+        function addReader() {
+            const name = document.getElementById('readerName').value.trim();
+            if (!name) return alert('Введите имя читателя!');
+            lib.addReader(name);
+            document.getElementById('readerName').value = '';
+            renderAll();
+        }
+
+        function borrow(bookId, readerId) {
+            lib.borrowBook(bookId, readerId);
+            renderAll();
+        }
+
+        function returnBook(bookId) {
+            lib.returnBook(bookId);
+            renderAll();
+        }
+
+        function delBook(id) {
+            if (!confirm('Удалить книгу?')) return;
+            lib.deleteBook(id);
+            renderAll();
+        }
+
+        function delReader(id) {
+            if (!confirm('Удалить читателя?')) return;
+            try {
+                lib.deleteReader(id);
+                renderAll();
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        function renderBooks() {
+            const list = document.getElementById('bookList');
+            list.innerHTML = '';
+            lib.getAllBooks().forEach(b => {
+                const takenBy = b.borrowedBy ? lib.getReader(b.borrowedBy)?.name : '';
+                const li = document.createElement('li');
+                li.className = `item ${b.borrowedBy ? 'borrowed' : 'available'}`;
+                li.innerHTML = `
+                    <i class="fas fa-book fa-2x"></i>
+                    <div class="item-info">
+                        <div class="item-title">${b.title}</div>
+                        <div class="item-desc">
+                            ${b.author ? `Автор: ${b.author}` : ''}
+                            ${takenBy ? `<br><strong>Взял:</strong> ${takenBy}` : '<br><em>Доступна</em>'}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        ${b.borrowedBy 
+                            ? `<button onclick="returnBook(${b.id})">Вернуть</button>`
+                            : lib.getAllReaders().map(r => `
+                                <button onclick="borrow(${b.id}, ${r.id})">${r.name}</button>
+                              `).join('')}
+                        <button class="danger" onclick="delBook(${b.id})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function renderReaders() {
+            const list = document.getElementById('readerList');
+            list.innerHTML = '';
+            lib.getAllReaders().forEach(r => {
+                const li = document.createElement('li');
+                li.className = 'item';
+                li.innerHTML = `
+                    <i class="fas fa-user fa-2x"></i>
+                    <div class="item-info">
+                        <div class="item-title">${r.name}</div>
+                        <div class="item-desc">
+                            Взятых книг: ${r.borrowedBooks.length}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="danger" onclick="delReader(${r.id})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        function renderStats() {
+            const total = lib.getAllBooks().length;
+            const avail = lib.getAvailableBooks().length;
+            document.getElementById('stats').textContent = 
+                `Всего книг: ${total} | Доступно: ${avail} | Взяты: ${total - avail}`;
+        }
+
+        function renderAll() {
+            renderBooks();
+            renderReaders();
+            renderStats();
+        }
+
+        function clearAll() {
+            if (confirm('Очистить ВСЮ библиотеку?')) {
+                lib.clearAll();
+                renderAll();
+            }
+        }
+
+        // Инициализация
+        renderAll();
+    </script>
+</body>
+</html>
