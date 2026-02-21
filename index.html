@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 24px;
+        }
+        h1 { text-align: center; margin-bottom: 24px; color: #333; }
+        .add-transaction {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+        input[type="number"], input[type="text"], select {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            min-width: 150px;
+        }
+        button {
+            padding: 12px 20px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0b5ed7; }
+        button.danger { background: #dc3545; }
+        button.danger:hover { background: #c82333; }
+        .transaction-list {
+            list-style: none;
+        }
+        .transaction-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: #fafafa;
+        }
+        .transaction-item.income { border-left: 4px solid #28a745; }
+        .transaction-item.expense { border-left: 4px solid #dc3545; }
+        .transaction-info { flex: 1; }
+        .transaction-amount { font-weight: bold; }
+        .transaction-desc { color: #666; font-size: 14px; }
+        .transaction-actions { display: flex; gap: 8px; }
+        .transaction-actions button { padding: 6px 12px; font-size: 14px; }
+        .stats {
+            text-align: center;
+            margin-top: 20px;
+            padding: 12px;
+            background: #e9ecef;
+            border-radius: 6px;
+        }
+        .footer { text-align: center; margin-top: 20px; font-size: 13px; color: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Expense Tracker</h1>
+        <div class="add-transaction">
+            <input type="number" id="amount" placeholder="Сумма" min="0" step="0.01">
+            <input type="text" id="description" placeholder="Описание (опционально)">
+            <select id="type">
+                <option value="income">Доход</option>
+                <option value="expense">Расход</option>
+            </select>
+            <button onclick="addTransaction()">Добавить</button>
+        </div>
+        <ul class="transaction-list" id="transactionList"></ul>
+        <div class="stats" id="stats">Баланс: 0 ₽ | Доходы: 0 ₽ | Расходы: 0 ₽</div>
+        <button class="danger" onclick="clearAll()" style="display: block; margin: 20px auto;">Очистить всё</button>
+        <div class="footer">Bogdan Matrosov © 2026</div>
+    </div>
+
+    <script src="expense.js"></script>
+    <script>
+        const tracker = new ExpenseTracker();
+
+        function addTransaction() {
+            try {
+                const amount = parseFloat(document.getElementById('amount').value);
+                const desc = document.getElementById('description').value.trim();
+                const type = document.getElementById('type').value;
+                if (isNaN(amount) || amount <= 0) throw new Error('Введите положительную сумму');
+                tracker.addTransaction(amount, desc, type);
+                document.getElementById('amount').value = '';
+                document.getElementById('description').value = '';
+                renderTransactions();
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('Удалить эту запись?')) {
+                tracker.deleteTransaction(id);
+                renderTransactions();
+            }
+        }
+
+        function renderTransactions() {
+            const list = document.getElementById('transactionList');
+            list.innerHTML = '';
+            tracker.getAllTransactions().forEach(tr => {
+                const li = document.createElement('li');
+                li.className = `transaction-item ${tr.type}`;
+                li.innerHTML = `
+                    <div class="transaction-info">
+                        <div class="transaction-amount">
+                            ${tr.type === 'income' ? '+' : '-'}${tr.amount.toFixed(2)} ₽
+                        </div>
+                        <div class="transaction-desc">${tr.description || ''}</div>
+                    </div>
+                    <div class="transaction-actions">
+                        <button class="danger" onclick="deleteTransaction(${tr.id})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+            updateStats();
+        }
+
+        function updateStats() {
+            const stats = tracker.getStats();
+            document.getElementById('stats').textContent = 
+                `Баланс: ${stats.balance.toFixed(2)} ₽ | Доходы: ${stats.income.toFixed(2)} ₽ | Расходы: ${stats.expense.toFixed(2)} ₽`;
+        }
+
+        function clearAll() {
+            if (confirm('Очистить все записи?')) {
+                tracker.clearAll();
+                renderTransactions();
+            }
+        }
+
+        renderTransactions();
+    </script>
+</body>
+</html>
