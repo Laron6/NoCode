@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Торговая площадка</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --gray: #64748b;
+            --light: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 { font-size: 2.5rem; }
+        .flex { display: flex; gap: 30px; }
+        .form-section {
+            width: 380px;
+            background: var(--card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .listings {
+            flex: 1;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid var(--light);
+            border-radius: 8px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover { background: var(--primary-dark); }
+        .item-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .item-title { font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; }
+        .item-price { font-size: 1.3rem; color: var(--primary); font-weight: 700; }
+        .reviews { margin-top: 15px; }
+        .review {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .rating { color: #fbbf24; font-size: 1.1rem; }
+        .actions button {
+            width: auto;
+            padding: 8px 16px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+        .delete-btn { background: #ef4444; }
+        .delete-btn:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>Торговая площадка</header>
+
+        <div class="flex">
+            <!-- Форма добавления товара -->
+            <div class="form-section">
+                <h2>Добавить объявление</h2>
+                <input type="text" id="title" placeholder="Название товара">
+                <input type="number" id="price" placeholder="Цена (₽)" min="1">
+                <textarea id="desc" rows="4" placeholder="Описание товара"></textarea>
+                <button onclick="addItem()">Опубликовать</button>
+            </div>
+
+            <!-- Список объявлений -->
+            <div class="listings">
+                <h2>Объявления</h2>
+                <div id="itemsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="marketplace.js"></script>
+    <script>
+        const market = new Marketplace();
+
+        function addItem() {
+            const title = document.getElementById('title').value.trim();
+            const price = parseFloat(document.getElementById('price').value);
+            const desc = document.getElementById('desc').value.trim();
+
+            if (!title || isNaN(price) || price <= 0) {
+                alert('Заполните название и корректную цену!');
+                return;
+            }
+
+            market.addItem(title, price, desc);
+            renderItems();
+            clearForm();
+        }
+
+        function addReview(itemId) {
+            const text = prompt('Ваш отзыв:');
+            const rating = parseInt(prompt('Оценка (1-5):'));
+            if (text && !isNaN(rating) && rating >= 1 && rating <= 5) {
+                market.addReview(itemId, text, rating);
+                renderItems();
+            }
+        }
+
+        function deleteItem(itemId) {
+            if (confirm('Удалить объявление?')) {
+                market.deleteItem(itemId);
+                renderItems();
+            }
+        }
+
+        function renderItems() {
+            const list = document.getElementById('itemsList');
+            list.innerHTML = '';
+            const items = market.getAllItems();
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'item-card';
+                div.innerHTML = `
+                    <div class="item-title">${item.title}</div>
+                    <div class="item-price">${item.price} ₽</div>
+                    <div style="margin:10px 0;">${item.desc || 'Без описания'}</div>
+                    <div class="reviews">
+                        <strong>Отзывы (${item.reviews.length}):</strong>
+                        ${item.reviews.map(r => `
+                            <div class="review">
+                                <div class="rating">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+                                ${r.text}
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="actions">
+                        <button onclick="addReview(${item.id})">Оставить отзыв</button>
+                        <button class="delete-btn" onclick="deleteItem(${item.id})">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('title').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('desc').value = '';
+        }
+
+        // Инициализация
+        renderItems();
+    </script>
+</body>
+</html>
