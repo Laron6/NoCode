@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Блог-платформа</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #6d28d9;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --gray: #64748b;
+            --light: #e2e8f0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 30px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            padding: 2rem 0;
+            background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .auth-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .auth-box {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .auth-box h2 { margin-bottom: 20px; text-align: center; }
+        .auth-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid var(--light);
+            border-radius: 8px;
+        }
+        .auth-box button {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .current-user {
+            text-align: right;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .post-form {
+            background: var(--card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid var(--light);
+            border-radius: 8px;
+        }
+        button {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: var(--primary-dark); }
+        .post {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .post-title { font-size: 1.6rem; font-weight: 600; margin-bottom: 8px; }
+        .post-author { font-size: 0.95rem; color: var(--gray); margin-bottom: 10px; }
+        .post-content { margin-bottom: 15px; }
+        .comments { margin-top: 15px; }
+        .comment {
+            background: #f1f5f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .actions button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        .delete-btn { background: #ef4444; }
+        .delete-btn:hover { background: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>Блог-платформа</header>
+
+        <div class="current-user" id="currentUserInfo">
+            Не авторизован • <button onclick="showAuthModal()">Войти / Зарегистрироваться</button>
+        </div>
+
+        <div class="post-form" id="postForm">
+            <h2>Новый пост</h2>
+            <input type="text" id="title" placeholder="Заголовок поста">
+            <textarea id="content" rows="5" placeholder="Текст поста"></textarea>
+            <button onclick="createPost()">Опубликовать</button>
+        </div>
+
+        <div id="postsList"></div>
+    </div>
+
+    <!-- Модальное окно авторизации -->
+    <div class="auth-modal" id="authModal" style="display:none;">
+        <div class="auth-box">
+            <h2 id="authTitle">Вход / Регистрация</h2>
+            <input type="text" id="username" placeholder="Имя пользователя">
+            <button onclick="loginOrRegister()">Войти / Создать</button>
+            <button onclick="hideAuthModal()" style="background:#64748b; margin-top:10px;">Отмена</button>
+        </div>
+    </div>
+
+    <script src="blog.js"></script>
+    <script>
+        const blog = new BlogAPI();
+
+        function showAuthModal() {
+            document.getElementById('authModal').style.display = 'flex';
+        }
+
+        function hideAuthModal() {
+            document.getElementById('authModal').style.display = 'none';
+            document.getElementById('username').value = '';
+        }
+
+        function loginOrRegister() {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                alert('Введите имя пользователя!');
+                return;
+            }
+
+            blog.login(username);
+            updateUserInfo();
+            renderPosts();
+            hideAuthModal();
+        }
+
+        function updateUserInfo() {
+            const user = blog.currentUser;
+            const info = document.getElementById('currentUserInfo');
+            if (user) {
+                info.innerHTML = `Залогинен как: <strong>${user}</strong> • <button onclick="blog.logout(); updateUserInfo(); renderPosts();">Выйти</button>`;
+                document.getElementById('postForm').style.display = 'block';
+            } else {
+                info.innerHTML = `Не авторизован • <button onclick="showAuthModal()">Войти / Зарегистрироваться</button>`;
+                document.getElementById('postForm').style.display = 'none';
+            }
+        }
+
+        function createPost() {
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+
+            if (!title || !content) {
+                alert('Заполните заголовок и текст поста!');
+                return;
+            }
+
+            blog.createPost(title, content);
+            renderPosts();
+            clearForm();
+        }
+
+        function addComment(postId) {
+            const text = prompt('Ваш комментарий:');
+            if (text && text.trim()) {
+                blog.addComment(postId, text.trim());
+                renderPosts();
+            }
+        }
+
+        function deletePost(postId) {
+            if (confirm('Удалить пост?')) {
+                blog.deletePost(postId);
+                renderPosts();
+            }
+        }
+
+        function renderPosts() {
+            const list = document.getElementById('postsList');
+            list.innerHTML = '';
+            const posts = blog.getPosts();
+
+            const currentUser = blog.currentUser;
+
+            posts.forEach(post => {
+                const div = document.createElement('div');
+                div.className = 'post';
+                div.innerHTML = `
+                    <div class="post-title">${post.title}</div>
+                    <div class="post-author">Автор: ${post.author}</div>
+                    <div class="post-content">${post.content}</div>
+                    <div class="comments">
+                        <strong>Комментарии (${post.comments.length}):</strong>
+                        ${post.comments.map(c => `<div class="comment">${c}</div>`).join('')}
+                    </div>
+                    <div class="actions" style="margin-top:15px;">
+                        <button onclick="addComment(${post.id})">Добавить комментарий</button>
+                        ${currentUser === post.author ? `<button class="delete-btn" onclick="deletePost(${post.id})">Удалить пост</button>` : ''}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('title').value = '';
+            document.getElementById('content').value = '';
+        }
+
+        // Инициализация
+        updateUserInfo();
+        renderPosts();
+    </script>
+</body>
+</html>
