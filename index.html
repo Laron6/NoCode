@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь событий</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #e2e8f0;
+            --accent: #6366f1;
+            --accent-dark: #4f46e5;
+            --border: #334155;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 30px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        header {
+            background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+            padding: 1.8rem;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .flex {
+            display: flex;
+            gap: 30px;
+        }
+        .sidebar {
+            width: 300px;
+            padding: 25px;
+            background: #111827;
+            border-right: 1px solid var(--border);
+        }
+        .main {
+            flex: 1;
+            padding: 30px;
+        }
+        h2 {
+            color: #c7d2fe;
+            margin-bottom: 1.2rem;
+            font-weight: 600;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 14px;
+            margin: 10px 0;
+            background: #1e293b;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+        }
+        button {
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-2px);
+        }
+        .event-card {
+            background: #111827;
+            padding: 18px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--accent);
+            transition: all 0.2s;
+        }
+        .event-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .user-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #1e293b;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+        }
+        .user-item:hover {
+            background: #253549;
+        }
+        .event-info {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+        .actions button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+        .stats {
+            text-align: center;
+            padding: 18px;
+            background: #111827;
+            font-weight: 500;
+            border-top: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>Календарь событий</header>
+
+        <div class="flex">
+            <!-- Пользователи -->
+            <div class="sidebar">
+                <h2>Пользователи</h2>
+                <div id="userList"></div>
+                <button onclick="addNewUser()" style="margin-top:15px; width:100%;">+ Новый пользователь</button>
+            </div>
+
+            <!-- Форма и события -->
+            <div class="main">
+                <h2>Добавить событие</h2>
+                <select id="eventUser"><option value="">Выберите пользователя</option></select>
+                <input type="text" id="title" placeholder="Название события">
+                <input type="date" id="date">
+                <input type="time" id="time">
+                <textarea id="desc" rows="3" placeholder="Описание (опционально)"></textarea>
+                <button onclick="addEvent()">Добавить событие</button>
+
+                <h2 style="margin-top:40px;">События</h2>
+                <div id="eventsList"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="calendar.js"></script>
+    <script>
+        const calendar = new CalendarApp();
+
+        function addNewUser() {
+            const name = prompt('Имя нового пользователя:');
+            if (name && name.trim()) {
+                calendar.addUser(name.trim());
+                renderUsers();
+            }
+        }
+
+        function addEvent() {
+            const userSelect = document.getElementById('eventUser');
+            const userId = userSelect.value;
+            const title = document.getElementById('title').value.trim();
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+            const desc = document.getElementById('desc').value.trim();
+
+            if (!userId || userId === '' || !title || !date || !time) {
+                alert('Заполните все обязательные поля!');
+                return;
+            }
+
+            const selectedOption = userSelect.options[userSelect.selectedIndex];
+            const creatorName = selectedOption.textContent || 'Неизвестный пользователь';
+
+            calendar.addEvent(userId, title, date, time, desc, creatorName);
+            renderEvents();
+            renderUsers();
+            clearForm();
+        }
+
+        function editEvent(id) {
+            const ev = calendar.getEvent(id);
+            if (!ev) return;
+
+            const newTitle = prompt('Новое название события:', ev.title);
+            const newDate = prompt('Новая дата (YYYY-MM-DD):', ev.date);
+            const newTime = prompt('Новое время (HH:MM):', ev.time);
+            const newDesc = prompt('Новое описание:', ev.desc || '');
+
+            if (newTitle && newDate && newTime) {
+                calendar.updateEvent(id, newTitle, newDate, newTime, newDesc);
+                renderEvents();
+            }
+        }
+
+        function deleteEvent(id) {
+            if (confirm('Удалить событие?')) {
+                calendar.deleteEvent(id);
+                renderEvents();
+            }
+        }
+
+        function renderUsers() {
+            const list = document.getElementById('userList');
+            const select = document.getElementById('eventUser');
+            list.innerHTML = '';
+            select.innerHTML = '<option value="">Выберите пользователя</option>';
+
+            calendar.getAllUsers().forEach(user => {
+                const div = document.createElement('div');
+                div.className = 'user-item';
+                div.textContent = user.name;
+                list.appendChild(div);
+
+                const opt = document.createElement('option');
+                opt.value = user.id;
+                opt.textContent = user.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function renderEvents() {
+            const list = document.getElementById('eventsList');
+            list.innerHTML = '';
+            const events = calendar.getAllEvents();
+
+            events.forEach(ev => {
+                const div = document.createElement('div');
+                div.className = 'event-card';
+                div.innerHTML = `
+                    <div style="font-weight:600; font-size:1.2rem; color:#c7d2fe;">${ev.title}</div>
+                    <div class="event-info">${ev.date} ${ev.time} • Создал: ${ev.creatorName}</div>
+                    ${ev.desc ? `<div style="margin-top:8px; color:#94a3b8;">${ev.desc}</div>` : ''}
+                    <div class="actions" style="margin-top:12px;">
+                        <button onclick="editEvent(${ev.id})">Редактировать</button>
+                        <button onclick="deleteEvent(${ev.id})" style="background:#ef4444;">Удалить</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+
+            updateStats();
+        }
+
+        function clearForm() {
+            document.getElementById('title').value = '';
+            document.getElementById('desc').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('time').value = '';
+            document.getElementById('eventUser').value = '';
+        }
+
+        function updateStats() {
+            const stats = calendar.getStats();
+            document.getElementById('stats').textContent = 
+                `Всего событий: ${stats.total} | Скоро: ${stats.soon}`;
+        }
+
+        // Проверка уведомлений каждые 60 сек (без запроса при загрузке)
+        setInterval(() => calendar.checkUpcomingEvents(), 60000);
+
+        // Инициализация
+        renderUsers();
+        renderEvents();
+    </script>
+</body>
+</html>
